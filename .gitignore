@@ -1,0 +1,9 @@
+# db files
+.leveldata
+
+dist
+node_modules
+
+.DS_Store
+
+config.json
