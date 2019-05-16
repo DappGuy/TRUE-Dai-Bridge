@@ -1,4 +1,4 @@
-import './app/subscribe'
-import './app/service'
+import App from './app/subscribe'
 
-console.log('server start')
+const app = new App()
+app.start()

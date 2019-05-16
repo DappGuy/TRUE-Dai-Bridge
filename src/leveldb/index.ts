@@ -1,6 +1,12 @@
 import LevelDB = require('level')
 
 const genKey = (...keys: string[]): string => keys.join(':')
+const padNumber = (n: number): string => n.toString().padStart(20, '0')
+
+interface Datum {
+  key: string
+  value: any
+}
 
 export default class Database {
   private db: LevelDB
@@ -25,7 +31,7 @@ export default class Database {
     count++
     return this.db.batch()
       .put(genKey(prefix, index), count)
-      .put(genKey(prefix, index, count.toString()), key)
+      .put(genKey(prefix, index, padNumber(count)), key)
       .put(genKey(prefix, key), value)
       .write()
       .then(() => true)
@@ -42,13 +48,41 @@ export default class Database {
     })
   }
 
-  public async query (prefix: string, index: string, i: number): Promise<{ key: string, value: any }> {
+  public async query (prefix: string, index: string, i: number): Promise<Datum> {
     let value = null
-    const key = await this.db.get(genKey(prefix, index, i.toString())).catch(() => '')
+    const key = await this.db.get(genKey(prefix, index, padNumber(i))).catch(() => '')
     if (key) {
       value = await this.get(prefix, key)
     }
     return { key, value }
+  }
+
+  public async queryAll (
+    prefix: string, index: string,
+    gte: number, lte: number,
+    reverse: boolean = false
+  ): Promise<Datum[]> {
+    return new Promise((resolve: (keys: string[]) => void) => {
+      const rows: string[] = []
+      this.db.createValueStream({
+        lte: genKey(prefix, index, padNumber(lte)),
+        gte: genKey(prefix, index, padNumber(gte)),
+        reverse
+      }).on('data', (value: string) => {
+        rows.push(value)
+      }).on('error', () => {
+        resolve([])
+      }).on('end', () => {
+        resolve(rows)
+      })
+    }).then((keys: string[]) => {
+      return Promise.all(keys.map(async key => {
+        return this.get(prefix, key)
+          .then(value => {
+            return { key, value }
+          })
+      }))
+    })
   }
 
   public async getIndexCount (prefix: string, index: string): Promise<number> {

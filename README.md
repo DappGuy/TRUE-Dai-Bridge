@@ -10,7 +10,7 @@ $ npm run build
 ## start (not completed)
 
 ```shell
-$ node dist/index.js
+$ node dist/index.js -s
 ```
 
 and to view startup help

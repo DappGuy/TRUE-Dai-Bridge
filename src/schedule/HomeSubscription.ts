@@ -36,10 +36,11 @@ export default class HomeSubscription extends Subscription {
       const from = this.web3t.abi.decodeParameter('address', log.topics[1])
       const value = this.web3t.abi.decodeParameter('uint256', log.data)
       const hash = log.transactionHash
+      const block = log.blockNumber
       const calldata = this.genCalldata(from, value)
       const pid = this.web3t.utils.keccak256(hash + calldata.substr(2) + '00')
       return this.db.indexed(this.prefix, pid, PROPOSAL_INDEX, {
-        hash, calldata
+        hash, calldata, block
       })
     }))
 

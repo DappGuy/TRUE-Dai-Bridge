@@ -1,40 +1,45 @@
+import { Server } from 'http'
 import * as cors from 'cors'
 import * as express from 'express'
 
-import { BaseApp, OptionParam } from '../BaseApp'
+import { MsgLogger } from '../BaseApp'
 import Database from '../leveldb'
+
 import { PROPOSAL_INDEX } from '../utils'
 
 interface ServiceConfig {
   port: number
 }
 
-const opts: OptionParam[] = [
-  ['-d, --datadir [datadir]', 'Specify a file as levelDB store', '.leveldata']
-]
+export default class Service {
 
-export default class ServiceApp extends BaseApp {
-
+  private logger: MsgLogger
   private db: Database
   private app: express.Express
 
   private port = 3000
+  private server?: Server
 
-  constructor () {
-    super(...opts)
+  constructor (db: Database, logger: MsgLogger, config: ServiceConfig) {
 
-    this.db = new Database(this.command.datadir)
+    this.logger = logger
+    this.db = db
     this.app = express()
 
-    const serviceConfig = this.config.service as ServiceConfig
-    this.port = serviceConfig.port
+    this.port = config.port
 
     this.init()
   }
 
   public start () {
-    this.app.listen(this.port)
+    this.server = this.app.listen(this.port)
     this.logger(`[ServiceApp] service start at ${this.port}`)
+  }
+
+  public stop () {
+    if (this.server) {
+      this.server.close()
+    }
   }
 
   private init () {
@@ -55,19 +60,19 @@ export default class ServiceApp extends BaseApp {
       }
       const offset = Number(req.query.offset) || 0
       const size = Number(req.query.size) || 20
-      if (offset < 0 || size < 0) {
+      if (offset < 0 || size <= 0) {
         return res.sendStatus(403)
       }
       const proposalCount = await this.db.getIndexCount(prefix, PROPOSAL_INDEX)
-      const from = Math.max(0, proposalCount - offset)
-      const end = Math.max(0, from - size)
-      if (from === end) {
+      const top = Math.max(0, proposalCount - offset)
+      if (top === 0) {
         return res.send({
           rows: [],
           count: proposalCount
         })
       }
-      const rows = await this.getProposals(prefix, from, end)
+      const bottom = Math.max(0, top - size + 1)
+      const rows = await this.getProposals(prefix, top, bottom)
       res.send({
         rows,
         count: proposalCount
@@ -76,21 +81,12 @@ export default class ServiceApp extends BaseApp {
   }
 
   /**
-   * return proposals with its index between [from, end)
+   * return proposals with its index between [top, bottom]
    */
-  private async getProposals (prefix: string, from: number, end: number): Promise<any[]> {
-    if (from < end) {
+  private async getProposals (prefix: string, top: number, bottom: number): Promise<any[]> {
+    if (top < bottom) {
       return []
     }
-    const indexs: number[] = []
-    for (let i = from; i > end; i--) {
-      indexs.push(i)
-    }
-    return Promise.all(indexs.map(index => {
-      return this.db.query(prefix, PROPOSAL_INDEX, index)
-    }))
+    return this.db.queryAll(prefix, PROPOSAL_INDEX, bottom, top, true)
   }
 }
-
-const app = new ServiceApp()
-app.start()
