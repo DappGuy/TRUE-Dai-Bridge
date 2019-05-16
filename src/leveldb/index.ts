@@ -42,6 +42,23 @@ export default class Database {
       })
   }
 
+  public async indexedWithTag (prefix: string, key: string, index: string, tag: string, value: any): Promise<boolean> {
+    let count = await this.getIndexCount(prefix, index)
+    count++
+    return this.db.batch()
+      .put(genKey(prefix, index), count)
+      .put(genKey(prefix, index, padNumber(count)), key)
+      .put(genKey(prefix, tag, padNumber(count)), true)
+      .put(genKey(prefix, key), value)
+      .write()
+      .then(() => true)
+      .catch(err => {
+        // TODO
+        console.log(err.message || err)
+        return false
+      })
+  }
+
   public async get (prefix: string, key: string): Promise<any> {
     return this.db.get(genKey(prefix, key)).catch(() => {
       return null

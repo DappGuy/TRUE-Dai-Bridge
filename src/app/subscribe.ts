@@ -1,6 +1,6 @@
 import { BaseApp, OptionParam } from '../BaseApp'
 import Database from '../leveldb'
-import HomeSubscription from '../schedule/HomeSubscription'
+import HomeSubscription from '../schedule/HomeBridgeSubscription'
 import Service from './service'
 
 interface HomeNetConfig {

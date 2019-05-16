@@ -1,5 +1,5 @@
-import { MsgLogger } from 'src/BaseApp'
 import { Log } from 'web3true/types'
+import { MsgLogger } from 'src/BaseApp'
 import { SubOptions } from './type'
 
 import sWeb3t from '../web3t'

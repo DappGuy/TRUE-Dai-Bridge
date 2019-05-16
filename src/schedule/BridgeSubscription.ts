@@ -1,19 +1,23 @@
 import { Log } from 'web3true/types'
 import { MsgLogger } from 'src/BaseApp'
+import { SubOptions } from './type'
 import Database from 'src/leveldb'
-import { SubOptions, HomeSubOptions } from './type'
 
-import Subscription from './index'
-import { TRANSFER_EVENT, FROM_BLOCK_KEY, PROPOSAL_INDEX, TDAI_ISSUE_FUNC_ABI } from '../utils'
+import Subscription from './Base'
+import { FROM_BLOCK_KEY, PROPOSAL_INDEX, UN_SIGNED_TAG } from '../utils'
 
-export default class HomeSubscription extends Subscription {
+export default abstract class BridgeSubscription extends Subscription {
 
-  private db: Database
+  protected db: Database
 
-  constructor (db: Database, logger: MsgLogger, options: SubOptions & HomeSubOptions) {
+  constructor (db: Database, logger: MsgLogger, options: SubOptions) {
     super(logger, options)
-    this.db = db
 
+    this.db = db
+    this.initFromHeightFromDB()
+  }
+
+  protected initFromHeightFromDB () {
     this.locked = true
     this.db.get(this.prefix, FROM_BLOCK_KEY).then(height => {
       this.locked = false
@@ -22,14 +26,7 @@ export default class HomeSubscription extends Subscription {
         this.fromHeight = height
       }
     })
-
-    const topic = this.web3t.abi.encodeEventSignature(TRANSFER_EVENT)
-    const store = this.web3t.abi.encodeParameter('address', options.storeContractAddr)
-    this.setSubTopics([topic, null, store])
   }
-
-  get name () { return 'HomeSubscription' }
-  get prefix () { return 'home' }
 
   protected async processLogs (logs: Log[]): Promise<boolean> {
     await Promise.all(logs.map(log => {
@@ -39,7 +36,7 @@ export default class HomeSubscription extends Subscription {
       const block = log.blockNumber
       const calldata = this.genCalldata(from, value)
       const pid = this.web3t.utils.keccak256(hash + calldata.substr(2) + '00')
-      return this.db.indexed(this.prefix, pid, PROPOSAL_INDEX, {
+      return this.db.indexedWithTag(this.prefix, pid, PROPOSAL_INDEX, UN_SIGNED_TAG, {
         hash, calldata, block
       })
     }))
@@ -49,7 +46,5 @@ export default class HomeSubscription extends Subscription {
     return true
   }
 
-  private genCalldata (from: string, value: string): string {
-    return this.web3t.abi.encodeFunctionCall(TDAI_ISSUE_FUNC_ABI, [from, value])
-  }
+  protected abstract genCalldata (from: string, value: string): string
 }
