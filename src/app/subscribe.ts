@@ -1,13 +1,14 @@
 import { BaseApp, OptionParam } from '../BaseApp'
 import Database from '../leveldb'
-import HomeSubscription from '../schedule/HomeBridgeSubscription'
+import HomeBridgeSubscription from '../schedule/HomeBridgeSubscription'
+import ForeignBridgeSubscription from '../schedule/ForeignBridgeSubscription'
 import Service from './service'
 
-interface HomeNetConfig {
+interface NetConfig {
   provider: string
   type: string
   tokenContract: string
-  storeContract: string
+  multiSignContract: string
   fromHeight: number
 }
 
@@ -21,7 +22,10 @@ export default class SubscribeApp extends BaseApp {
   private db: Database
 
   private service?: Service
-  private homeSub: HomeSubscription
+  private homeSub: HomeBridgeSubscription
+  private foreignSub: ForeignBridgeSubscription
+
+  private interval: number = 100000
 
   constructor () {
     super(...opts)
@@ -32,26 +36,41 @@ export default class SubscribeApp extends BaseApp {
       this.service = new Service(this.db, this.logger, this.config.service)
     }
 
-    const homeNetConfig = this.config.homeNetwork as HomeNetConfig
-
-    this.homeSub = new HomeSubscription(this.db, this.logger, {
+    const homeNetConfig = this.config.homeNetwork as NetConfig
+    this.homeSub = new HomeBridgeSubscription(this.db, this.logger, {
       httpProvider: homeNetConfig.provider,
       netType: homeNetConfig.type,
-      storeContractAddr: homeNetConfig.storeContract,
+      storeContractAddr: homeNetConfig.multiSignContract,
       contractAddr: homeNetConfig.tokenContract,
       fromBlockHeight: homeNetConfig.fromHeight
     })
+
+    const foreignNetConfig = this.config.foreignNetwork as NetConfig
+    this.foreignSub = new ForeignBridgeSubscription(this.db, this.logger, {
+      httpProvider: foreignNetConfig.provider,
+      netType: foreignNetConfig.type,
+      contractAddr: foreignNetConfig.tokenContract,
+      fromBlockHeight: foreignNetConfig.fromHeight
+    })
+
+    if (typeof this.config.interval === 'number') {
+      this.interval = this.config.interval
+    }
   }
 
   public start () {
-    this.homeSub.startSubscriptionLogs(5000)
+    this.homeSub.start(this.interval)
+    setTimeout(() => {
+      this.foreignSub.start(this.interval)
+    }, this.interval / 2)
     if (this.service) {
       this.service.start()
     }
   }
 
   public stop () {
-    this.homeSub.stopSubscriptionLogs()
+    this.homeSub.stop()
+    this.foreignSub.stop()
     if (this.service) {
       this.service.stop()
     }

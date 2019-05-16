@@ -46,5 +46,5 @@ export default abstract class BridgeSubscription extends Subscription {
     return true
   }
 
-  protected abstract genCalldata (from: string, value: string): string
+  protected abstract genCalldata (user: string, value: string): string
 }

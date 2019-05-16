@@ -44,7 +44,7 @@ export default abstract class Subscription {
     this.topics = topics
   }
 
-  public startSubscriptionLogs (interval: number): boolean {
+  public start (interval: number): boolean {
     if (this.subTimer) {
       return false
     }
@@ -54,7 +54,7 @@ export default abstract class Subscription {
     return true
   }
 
-  public stopSubscriptionLogs (): boolean {
+  public stop (): boolean {
     if (!this.subTimer) {
       return false
     }

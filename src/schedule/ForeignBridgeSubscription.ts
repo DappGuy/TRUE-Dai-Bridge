@@ -16,7 +16,7 @@ export default class ForeignBridgeSubscription extends BridgeSubscription {
   get name () { return 'ForeignBridgeSubscription' }
   get prefix () { return 'foreign' }
 
-  protected genCalldata (from: string, value: string): string {
-    return this.web3t.abi.encodeFunctionCall(HOME_UNLOCK_FUNC_ABI, [from, value])
+  protected genCalldata (user: string, value: string): string {
+    return this.web3t.abi.encodeFunctionCall(HOME_UNLOCK_FUNC_ABI, [user, value])
   }
 }

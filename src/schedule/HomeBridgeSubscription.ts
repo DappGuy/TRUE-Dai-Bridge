@@ -17,7 +17,7 @@ export default class HomeBridgeSubscription extends BridgeSubscription {
   get name () { return 'HomeBridgeSubscription' }
   get prefix () { return 'home' }
 
-  protected genCalldata (from: string, value: string): string {
-    return this.web3t.abi.encodeFunctionCall(FOREIGN_ISSUE_FUNC_ABI, [from, value])
+  protected genCalldata (user: string, value: string): string {
+    return this.web3t.abi.encodeFunctionCall(FOREIGN_ISSUE_FUNC_ABI, [user, value])
   }
 }
