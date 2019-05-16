@@ -4,7 +4,7 @@ import Database from 'src/leveldb'
 import { SubOptions, HomeSubOptions } from './type'
 
 import Subscription from './index'
-import { TRANSFER_EVENT, FROM_BLOCK_KEY } from '../utils'
+import { TRANSFER_EVENT, FROM_BLOCK_KEY, PROPOSAL_INDEX, TDAI_ISSUE_FUNC_ABI } from '../utils'
 
 export default class HomeSubscription extends Subscription {
 
@@ -32,15 +32,23 @@ export default class HomeSubscription extends Subscription {
   get prefix () { return 'home' }
 
   protected async processLogs (logs: Log[]): Promise<boolean> {
-    // TODO: record and suggest
-    logs.forEach(log => {
+    await Promise.all(logs.map(log => {
       const from = this.web3t.abi.decodeParameter('address', log.topics[1])
       const value = this.web3t.abi.decodeParameter('uint256', log.data)
-      console.log('from:', from, 'value:', value)
-    })
+      const hash = log.transactionHash
+      const calldata = this.genCalldata(from, value)
+      const pid = this.web3t.utils.keccak256(hash + calldata.substr(2) + '00')
+      return this.db.indexed(this.prefix, pid, PROPOSAL_INDEX, {
+        hash, calldata
+      })
+    }))
 
-    this.db.set(this.prefix, FROM_BLOCK_KEY, this.fromHeight)
+    await this.db.set(this.prefix, FROM_BLOCK_KEY, this.fromHeight)
 
     return true
+  }
+
+  private genCalldata (from: string, value: string): string {
+    return this.web3t.abi.encodeFunctionCall(TDAI_ISSUE_FUNC_ABI, [from, value])
   }
 }
