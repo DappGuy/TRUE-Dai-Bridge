@@ -30,11 +30,11 @@ export default abstract class BridgeSubscription extends Subscription {
 
   protected async processLogs (logs: Log[]): Promise<boolean> {
     await Promise.all(logs.map(log => {
-      const from = this.web3t.abi.decodeParameter('address', log.topics[1])
+      const user = this.web3t.abi.decodeParameter('address', log.topics[1])
       const value = this.web3t.abi.decodeParameter('uint256', log.data)
       const hash = log.transactionHash
       const block = log.blockNumber
-      const calldata = this.genCalldata(from, value)
+      const calldata = this.genCalldata(user, value)
       const pid = this.web3t.utils.keccak256(hash + calldata.substr(2) + '00')
       return this.db.indexedWithTag(this.prefix, pid, PROPOSAL_INDEX, UN_SIGNED_TAG, {
         hash, calldata, block
