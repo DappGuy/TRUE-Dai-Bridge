@@ -52,6 +52,7 @@ export default class Database {
     return this.db.batch()
       .put(genKey(prefix, index), id)
       .put(genKey(prefix, index, padNumber(id)), key)
+      .put(genKey(prefix, key, index), id)
       .put(genKey(prefix, key), value)
       .write()
       .then(() => true)
@@ -148,11 +149,11 @@ export default class Database {
   ): Promise<Datum[]> {
     return this.getAll(
       prefix, index, options
-    ).then((data: Datum[]) => {
-      return Promise.all(data.map(async ({ key }) => {
-        return this.get(prefix, key)
+    ).then(async (data: Datum[]) => {
+      return Promise.all(data.map(async datum => {
+        return this.get(prefix, datum.value)
           .then(value => {
-            return { key, value }
+            return { key: datum.value, value }
           })
       }))
     })
@@ -164,7 +165,7 @@ export default class Database {
   ): Promise<DatumWithTag[]> {
     return this.getAll(
       prefix, tagName, options
-    ).then((tags: Datum[]) => {
+    ).then(async (tags: Datum[]) => {
       return Promise.all(tags.map(async tag => {
         const id = tag.key.split(':').pop() as string
         return this.query(prefix, index, id)

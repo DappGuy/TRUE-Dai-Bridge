@@ -5,7 +5,7 @@ import * as express from 'express'
 import { MsgLogger } from '../BaseApp'
 import Database from '../leveldb'
 
-import { PROPOSAL_INDEX } from '../utils'
+import { PROPOSAL_INDEX, FROM_BLOCK_KEY, UN_SIGNED_TAG } from '../utils'
 
 interface ServiceConfig {
   port: number
@@ -47,6 +47,34 @@ export default class Service {
       methods: ['GET'],
       origin: '*'
     }))
+
+    this.app.get('/height/:type', async (req, res) => {
+      const type = req.params.type
+      let prefix = ''
+      if (type === 'home') {
+        prefix = 'home'
+      } else if (type === 'foreign') {
+        prefix = 'foreign'
+      } else {
+        return res.sendStatus(403)
+      }
+      const height = await this.db.get(prefix, FROM_BLOCK_KEY)
+      res.send(height)
+    })
+
+    this.app.get('/proposals/unsigned/:type', async (req, res) => {
+      const type = req.params.type
+      let prefix = ''
+      if (type === 'home2foreign') {
+        prefix = 'home'
+      } else if (type === 'foreign2home') {
+        prefix = 'foreign'
+      } else {
+        return res.sendStatus(403)
+      }
+      const rows = await this.getUnsignedProposals(prefix)
+      res.send({ rows })
+    })
 
     this.app.get('/proposals/:type', async (req, res) => {
       const type = req.params.type
@@ -92,5 +120,15 @@ export default class Service {
       lte: top,
       reverse: true
     })
+  }
+
+  private async getUnsignedProposals (prefix: string, ): Promise<any[]> {
+    return this.db.queryAllByTag(
+      prefix, PROPOSAL_INDEX, UN_SIGNED_TAG, {
+        gte: 0,
+        lte: Infinity,
+        limit: 200
+      }
+    )
   }
 }
