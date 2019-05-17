@@ -1,0 +1,196 @@
+[{
+  "constant": false,
+  "inputs": [{
+    "name": "_member",
+    "type": "address"
+  }],
+  "name": "removeWhiteList",
+  "outputs": [],
+  "payable": false,
+  "stateMutability": "nonpayable",
+  "type": "function"
+}, {
+  "constant": false,
+  "inputs": [{
+    "name": "_pid",
+    "type": "bytes32"
+  }],
+  "name": "checkProposal",
+  "outputs": [],
+  "payable": false,
+  "stateMutability": "nonpayable",
+  "type": "function"
+}, {
+  "constant": true,
+  "inputs": [],
+  "name": "threshold",
+  "outputs": [{
+    "name": "",
+    "type": "uint256"
+  }],
+  "payable": false,
+  "stateMutability": "view",
+  "type": "function"
+}, {
+  "constant": true,
+  "inputs": [{
+    "name": "_pid",
+    "type": "bytes32"
+  }],
+  "name": "getProposal",
+  "outputs": [{
+    "name": "state",
+    "type": "uint8"
+  }, {
+    "name": "data",
+    "type": "bytes"
+  }, {
+    "name": "self",
+    "type": "bool"
+  }, {
+    "name": "proof",
+    "type": "bytes32"
+  }, {
+    "name": "updateAt",
+    "type": "uint256"
+  }, {
+    "name": "sign",
+    "type": "address[]"
+  }],
+  "payable": false,
+  "stateMutability": "view",
+  "type": "function"
+}, {
+  "constant": true,
+  "inputs": [],
+  "name": "whiteListSize",
+  "outputs": [{
+    "name": "",
+    "type": "uint256"
+  }],
+  "payable": false,
+  "stateMutability": "view",
+  "type": "function"
+}, {
+  "constant": false,
+  "inputs": [{
+    "name": "_threshold",
+    "type": "uint256"
+  }],
+  "name": "setThreshold",
+  "outputs": [],
+  "payable": false,
+  "stateMutability": "nonpayable",
+  "type": "function"
+}, {
+  "constant": true,
+  "inputs": [{
+    "name": "_addr",
+    "type": "address"
+  }],
+  "name": "isInWhiteList",
+  "outputs": [{
+    "name": "",
+    "type": "bool"
+  }],
+  "payable": false,
+  "stateMutability": "view",
+  "type": "function"
+}, {
+  "constant": false,
+  "inputs": [{
+    "name": "_proof",
+    "type": "bytes32"
+  }, {
+    "name": "_data",
+    "type": "bytes"
+  }, {
+    "name": "_self",
+    "type": "bool"
+  }],
+  "name": "suggestIssue",
+  "outputs": [],
+  "payable": false,
+  "stateMutability": "nonpayable",
+  "type": "function"
+}, {
+  "constant": true,
+  "inputs": [],
+  "name": "target",
+  "outputs": [{
+    "name": "",
+    "type": "address"
+  }],
+  "payable": false,
+  "stateMutability": "view",
+  "type": "function"
+}, {
+  "constant": false,
+  "inputs": [{
+    "name": "_member",
+    "type": "address"
+  }],
+  "name": "addWhiteList",
+  "outputs": [],
+  "payable": false,
+  "stateMutability": "nonpayable",
+  "type": "function"
+}, {
+  "inputs": [{
+    "name": "_target",
+    "type": "address"
+  }, {
+    "name": "_threshold",
+    "type": "uint256"
+  }, {
+    "name": "_whiteList",
+    "type": "address[]"
+  }],
+  "payable": false,
+  "stateMutability": "nonpayable",
+  "type": "constructor"
+}, {
+  "anonymous": false,
+  "inputs": [{
+    "indexed": false,
+    "name": "member",
+    "type": "address"
+  }],
+  "name": "AddWhiteList",
+  "type": "event"
+}, {
+  "anonymous": false,
+  "inputs": [{
+    "indexed": false,
+    "name": "member",
+    "type": "address"
+  }],
+  "name": "RemoveWhiteList",
+  "type": "event"
+}, {
+  "anonymous": false,
+  "inputs": [{
+    "indexed": true,
+    "name": "pid",
+    "type": "bytes32"
+  }],
+  "name": "PendingProposal",
+  "type": "event"
+}, {
+  "anonymous": false,
+  "inputs": [{
+    "indexed": true,
+    "name": "pid",
+    "type": "bytes32"
+  }, {
+    "indexed": false,
+    "name": "state",
+    "type": "uint8"
+  }, {
+    "indexed": false,
+    "name": "sign",
+    "type": "address[]"
+  }],
+  "name": "PassProposal",
+  "type": "event"
+}]

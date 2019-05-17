@@ -36,6 +36,7 @@ export default abstract class BridgeSubscription extends Subscription {
       const block = log.blockNumber
       const calldata = this.genCalldata(user, value)
       const pid = this.web3t.utils.keccak256(hash + calldata.substr(2) + '00')
+      this.logger(`[${this.name}] Log: hash`, hash, 'user', user, 'value', (value / 1e18).toFixed(2))
       return this.db.indexedWithTag(this.prefix, pid, PROPOSAL_INDEX, UN_SIGNED_TAG, {
         hash, calldata, block
       })

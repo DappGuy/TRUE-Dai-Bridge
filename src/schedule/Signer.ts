@@ -93,6 +93,7 @@ export default abstract class Signer {
       const txHash = p.tag
       const finished = await this.web3t.checkTransactionReceipt(txHash)
       if (finished) {
+        this.logger(`[${this.name}] signed: hash`, p.key)
         await this.db.updateTag(this.prefix, UN_SIGNED_TAG, SIGNED_TAG, p.id)
       }
     }))
@@ -117,7 +118,7 @@ export default abstract class Signer {
       const txHash = await this.web3t.sendTransactionByAdmin({
         to: this.multiSignAddr,
         data,
-        gas: 1000000,
+        gas: 3000000,
         gasPrice: this.gasPrice
       })
       if (!txHash) {

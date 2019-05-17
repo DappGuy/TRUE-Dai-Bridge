@@ -3,7 +3,7 @@ import Database from 'src/leveldb'
 import { SubOptions, HomeSubOptions } from './type'
 
 import BridgeSubscription from './BridgeSubscription'
-import { TRANSFER_EVENT, FOREIGN_ISSUE_FUNC_ABI } from '../utils'
+import { TRANSFER_EVENT, FOREIGN_MINT_FUNC_ABI } from '../utils'
 
 export default class HomeBridgeSubscription extends BridgeSubscription {
   constructor (db: Database, logger: MsgLogger, options: SubOptions & HomeSubOptions) {
@@ -18,6 +18,6 @@ export default class HomeBridgeSubscription extends BridgeSubscription {
   get prefix () { return 'home' }
 
   protected genCalldata (user: string, value: string): string {
-    return this.web3t.abi.encodeFunctionCall(FOREIGN_ISSUE_FUNC_ABI, [user, value])
+    return this.web3t.abi.encodeFunctionCall(FOREIGN_MINT_FUNC_ABI, [user, value])
   }
 }

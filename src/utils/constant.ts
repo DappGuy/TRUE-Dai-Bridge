@@ -20,8 +20,8 @@ export const HOME_UNLOCK_FUNC_ABI = {
     }
   ]
 }
-export const FOREIGN_ISSUE_FUNC_ABI = {
-  name: 'issue',
+export const FOREIGN_MINT_FUNC_ABI = {
+  name: 'mint',
   inputs: [
     {
       name: 'user',
