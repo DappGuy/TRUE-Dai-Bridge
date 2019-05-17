@@ -1,11 +1,30 @@
 import LevelDB = require('level')
 
 const genKey = (...keys: string[]): string => keys.join(':')
-const padNumber = (n: number): string => n.toString().padStart(20, '0')
+const padNumber = (n: number): string => {
+  if (n === Infinity) {
+    return ':'.padEnd(20, '0')
+  }
+  return n.toString().padStart(20, '0')
+}
 
 interface Datum {
   key: string
   value: any
+}
+
+export interface DatumWithTag {
+  key: string
+  tagName: string
+  value: any
+  tag: any
+}
+
+interface StreamOptions {
+  gte: number,
+  lte: number,
+  reverse?: boolean
+  limit?: number
 }
 
 export default class Database {
@@ -65,9 +84,35 @@ export default class Database {
     })
   }
 
-  public async query (prefix: string, index: string, i: number): Promise<Datum> {
+  public async getAll (
+    prefix: string, key: string,
+    options: StreamOptions
+  ): Promise<Datum[]> {
+    return new Promise((resolve: (data: Datum[]) => void) => {
+      const rows: Datum[] = []
+      const reverse = options.reverse || false
+      const limit = options.limit || -1
+      this.db.createReadStream({
+        lte: genKey(prefix, key, padNumber(options.lte)),
+        gte: genKey(prefix, key, padNumber(options.gte)),
+        reverse,
+        limit
+      }).on('data', (datum: Datum) => {
+        rows.push(datum)
+      }).on('error', () => {
+        resolve([])
+      }).on('end', () => {
+        resolve(rows)
+      })
+    })
+  }
+
+  public async query (prefix: string, index: string, i: number | string): Promise<Datum> {
     let value = null
-    const key = await this.db.get(genKey(prefix, index, padNumber(i))).catch(() => '')
+    if (typeof i === 'number') {
+      i = padNumber(i)
+    }
+    const key = await this.db.get(genKey(prefix, index, i)).catch(() => '')
     if (key) {
       value = await this.get(prefix, key)
     }
@@ -76,27 +121,37 @@ export default class Database {
 
   public async queryAll (
     prefix: string, index: string,
-    gte: number, lte: number,
-    reverse: boolean = false
+    options: StreamOptions
   ): Promise<Datum[]> {
-    return new Promise((resolve: (keys: string[]) => void) => {
-      const rows: string[] = []
-      this.db.createValueStream({
-        lte: genKey(prefix, index, padNumber(lte)),
-        gte: genKey(prefix, index, padNumber(gte)),
-        reverse
-      }).on('data', (value: string) => {
-        rows.push(value)
-      }).on('error', () => {
-        resolve([])
-      }).on('end', () => {
-        resolve(rows)
-      })
-    }).then((keys: string[]) => {
-      return Promise.all(keys.map(async key => {
+    return this.getAll(
+      prefix, index, options
+    ).then((data: Datum[]) => {
+      return Promise.all(data.map(async ({ key }) => {
         return this.get(prefix, key)
           .then(value => {
             return { key, value }
+          })
+      }))
+    })
+  }
+
+  public async queryAllByTag (
+    prefix: string, index: string, tagName: string,
+    options: StreamOptions
+  ): Promise<DatumWithTag[]> {
+    return this.getAll(
+      prefix, tagName, options
+    ).then((tags: Datum[]) => {
+      return Promise.all(tags.map(async tag => {
+        const i = tag.key.split(':').pop() as string
+        return this.query(prefix, index, i)
+          .then(({ key, value }) => {
+            return {
+              key,
+              value,
+              tagName,
+              tag: tag.value
+            }
           })
       }))
     })

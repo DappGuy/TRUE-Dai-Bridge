@@ -21,6 +21,10 @@ export default class SimpleWeb3t {
     return this.web3t.utils
   }
 
+  get type () {
+    return this.web3t.currentProvider.type
+  }
+
   public async getBlockNumber () {
     return this.web3t.eth.getBlockNumber()
       .catch(err => {

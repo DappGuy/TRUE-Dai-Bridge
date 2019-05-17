@@ -2,9 +2,9 @@ import { Log } from 'web3true/types'
 import { MsgLogger } from 'src/BaseApp'
 import { SubOptions } from './type'
 import Database from 'src/leveldb'
-
-import Subscription from './Base'
 import { FROM_BLOCK_KEY, PROPOSAL_INDEX, UN_SIGNED_TAG } from '../utils'
+
+import Subscription from './Subscription'
 
 export default abstract class BridgeSubscription extends Subscription {
 

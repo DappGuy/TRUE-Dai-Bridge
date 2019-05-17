@@ -87,6 +87,10 @@ export default class Service {
     if (top < bottom) {
       return []
     }
-    return this.db.queryAll(prefix, PROPOSAL_INDEX, bottom, top, true)
+    return this.db.queryAll(prefix, PROPOSAL_INDEX, {
+      gte: bottom,
+      lte: top,
+      reverse: true
+    })
   }
 }

@@ -20,17 +20,25 @@ export default abstract class Subscription {
   private subTimer?: NodeJS.Timeout
 
   constructor (logger: MsgLogger, options: SubOptions) {
-    this.web3t = new sWeb3t(logger, options.httpProvider, options.netType)
+    if (options.web3t) {
+      this.web3t = options.web3t
+      if (options.web3t.type === 'eth') {
+        this.confirmedInterval = 12
+      }
+    } else if (options.httpProvider) {
+      this.web3t = new sWeb3t(logger, options.httpProvider, options.netType)
+      if (options.netType === 'eth') {
+        this.confirmedInterval = 12
+      }
+    } else {
+      throw new Error('Error [Subscription] unable to initialize web3t')
+    }
 
     this.logger = logger
 
     this.contractAddr = options.contractAddr
 
     this.fromHeight = options.fromBlockHeight || 1
-
-    if (options.netType === 'eth') {
-      this.confirmedInterval = 12
-    }
 
     if (options.maxBlockPerStep) {
       this.maxBlockPerStep = options.maxBlockPerStep

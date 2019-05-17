@@ -1,7 +1,9 @@
 import { BaseApp, OptionParam } from '../BaseApp'
 import Database from '../leveldb'
+import sWeb3t from '../web3t'
 import HomeBridgeSubscription from '../schedule/HomeBridgeSubscription'
 import ForeignBridgeSubscription from '../schedule/ForeignBridgeSubscription'
+import ForeignSigner from '../schedule/ForeignSigner'
 import Service from './service'
 
 interface NetConfig {
@@ -24,6 +26,7 @@ export default class SubscribeApp extends BaseApp {
   private service?: Service
   private homeSub: HomeBridgeSubscription
   private foreignSub: ForeignBridgeSubscription
+  private foreignSigner: ForeignSigner
 
   private interval: number = 100000
 
@@ -37,20 +40,27 @@ export default class SubscribeApp extends BaseApp {
     }
 
     const homeNetConfig = this.config.homeNetwork as NetConfig
+    const homeWeb3t = new sWeb3t(this.logger, homeNetConfig.provider, homeNetConfig.type)
+
+    const foreignNetConfig = this.config.foreignNetwork as NetConfig
+    const foreignWeb3t = new sWeb3t(this.logger, foreignNetConfig.provider, foreignNetConfig.type)
+
     this.homeSub = new HomeBridgeSubscription(this.db, this.logger, {
-      httpProvider: homeNetConfig.provider,
-      netType: homeNetConfig.type,
+      web3t: homeWeb3t,
       storeContractAddr: homeNetConfig.multiSignContract,
       contractAddr: homeNetConfig.tokenContract,
       fromBlockHeight: homeNetConfig.fromHeight
     })
 
-    const foreignNetConfig = this.config.foreignNetwork as NetConfig
     this.foreignSub = new ForeignBridgeSubscription(this.db, this.logger, {
-      httpProvider: foreignNetConfig.provider,
-      netType: foreignNetConfig.type,
+      web3t: foreignWeb3t,
       contractAddr: foreignNetConfig.tokenContract,
       fromBlockHeight: foreignNetConfig.fromHeight
+    })
+
+    this.foreignSigner = new ForeignSigner(this.db, this.logger, {
+      web3t: foreignWeb3t,
+      multiSignAddr: foreignNetConfig.multiSignContract
     })
 
     if (typeof this.config.interval === 'number') {
@@ -60,9 +70,15 @@ export default class SubscribeApp extends BaseApp {
 
   public start () {
     this.homeSub.start(this.interval)
+
     setTimeout(() => {
       this.foreignSub.start(this.interval)
-    }, this.interval / 2)
+    }, this.interval * 0.5)
+
+    setTimeout(() => {
+      this.foreignSigner.start(this.interval)
+    }, this.interval * 0.75)
+
     if (this.service) {
       this.service.start()
     }
@@ -70,7 +86,11 @@ export default class SubscribeApp extends BaseApp {
 
   public stop () {
     this.homeSub.stop()
+
     this.foreignSub.stop()
+
+    this.foreignSigner.stop()
+
     if (this.service) {
       this.service.stop()
     }
