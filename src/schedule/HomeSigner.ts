@@ -4,11 +4,11 @@ import Database from 'src/leveldb'
 
 import Signer from './Signer'
 
-export default class ForeignSigner extends Signer {
+export default class HomeSigner extends Signer {
   constructor (db: Database, logger: MsgLogger, options: SignerOptions) {
     super(db, logger, options)
   }
 
-  get name () { return 'ForeignSigner' }
-  get prefix () { return 'home' }
+  get name () { return 'HomeSigner' }
+  get prefix () { return 'foreign' }
 }

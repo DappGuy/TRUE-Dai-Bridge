@@ -15,9 +15,10 @@ interface Datum {
 
 export interface DatumWithTag {
   key: string
-  tagName: string
   value: any
+  tagName: string
   tag: any
+  id: string
 }
 
 interface StreamOptions {
@@ -46,11 +47,11 @@ export default class Database {
   }
 
   public async indexed (prefix: string, key: string, index: string, value: any): Promise<boolean> {
-    let count = await this.getIndexCount(prefix, index)
-    count++
+    let id = await this.getIndexCount(prefix, index)
+    id++
     return this.db.batch()
-      .put(genKey(prefix, index), count)
-      .put(genKey(prefix, index, padNumber(count)), key)
+      .put(genKey(prefix, index), id)
+      .put(genKey(prefix, index, padNumber(id)), key)
       .put(genKey(prefix, key), value)
       .write()
       .then(() => true)
@@ -62,13 +63,35 @@ export default class Database {
   }
 
   public async indexedWithTag (prefix: string, key: string, index: string, tag: string, value: any): Promise<boolean> {
-    let count = await this.getIndexCount(prefix, index)
-    count++
+    let id = await this.getIndexCount(prefix, index)
+    id++
     return this.db.batch()
-      .put(genKey(prefix, index), count)
-      .put(genKey(prefix, index, padNumber(count)), key)
-      .put(genKey(prefix, tag, padNumber(count)), true)
+      .put(genKey(prefix, index), id)
+      .put(genKey(prefix, index, padNumber(id)), key)
+      .put(genKey(prefix, tag, padNumber(id)), true)
       .put(genKey(prefix, key), value)
+      .write()
+      .then(() => true)
+      .catch(err => {
+        // TODO
+        console.log(err.message || err)
+        return false
+      })
+  }
+
+  public async updateTag (prefix: string, oriTag: string, newTag: string, id: number | string): Promise<boolean> {
+    if (typeof id === 'number') {
+      id = padNumber(id)
+    }
+    const value = await this.db.get(genKey(prefix, oriTag, id)).catch(() => {
+      return null
+    })
+    if (!value) {
+      return false
+    }
+    return this.db.batch()
+      .del(genKey(prefix, oriTag, id))
+      .put(genKey(prefix, newTag, id), value)
       .write()
       .then(() => true)
       .catch(err => {
@@ -107,12 +130,12 @@ export default class Database {
     })
   }
 
-  public async query (prefix: string, index: string, i: number | string): Promise<Datum> {
+  public async query (prefix: string, index: string, id: number | string): Promise<Datum> {
     let value = null
-    if (typeof i === 'number') {
-      i = padNumber(i)
+    if (typeof id === 'number') {
+      id = padNumber(id)
     }
-    const key = await this.db.get(genKey(prefix, index, i)).catch(() => '')
+    const key = await this.db.get(genKey(prefix, index, id)).catch(() => '')
     if (key) {
       value = await this.get(prefix, key)
     }
@@ -143,13 +166,11 @@ export default class Database {
       prefix, tagName, options
     ).then((tags: Datum[]) => {
       return Promise.all(tags.map(async tag => {
-        const i = tag.key.split(':').pop() as string
-        return this.query(prefix, index, i)
+        const id = tag.key.split(':').pop() as string
+        return this.query(prefix, index, id)
           .then(({ key, value }) => {
             return {
-              key,
-              value,
-              tagName,
+              key, value, tagName, id,
               tag: tag.value
             }
           })

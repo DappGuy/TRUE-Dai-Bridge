@@ -17,5 +17,6 @@ export interface SignerOptions {
   web3t?: SimpleWeb3t
   httpProvider?: string,
   netType?: string,
-  multiSignAddr: string
+  multiSignAddr: string,
+  gasPrice: string | number
 }

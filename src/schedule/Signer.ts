@@ -1,7 +1,7 @@
 import { MsgLogger } from 'src/BaseApp'
 import { SignerOptions } from './type'
 import Database, { DatumWithTag } from 'src/leveldb'
-import { PROPOSAL_INDEX, UN_SIGNED_TAG } from '../utils'
+import { PROPOSAL_INDEX, UN_SIGNED_TAG, SIGNED_TAG, SUGGEST_ISSUE_FUNC_ABI } from '../utils'
 
 import sWeb3t from '../web3t'
 
@@ -12,7 +12,7 @@ export default abstract class Signer {
   protected logger: MsgLogger
 
   protected multiSignAddr: string
-  protected topics: Array<string | null> = []
+  protected gasPrice: number | string
 
   protected locked = false
 
@@ -33,6 +33,7 @@ export default abstract class Signer {
     this.logger = logger
 
     this.multiSignAddr = options.multiSignAddr
+    this.gasPrice = options.gasPrice
   }
 
   abstract get name (): string
@@ -70,21 +71,60 @@ export default abstract class Signer {
       }
     )
 
-    const pendingProposals = []
-    const unSignedProposals = []
+    const pendingProposals: DatumWithTag[] = []
+    const unSignedProposals: DatumWithTag[] = []
 
     unFinishedProposals.forEach(p => {
-      if (/^0x[\da-fA-F]{64}$/.test(p.value)) {
+      if (/^0x[\da-fA-F]{64}$/.test(p.tag)) {
         pendingProposals.push(p)
       } else {
         unSignedProposals.push(p)
       }
     })
 
-    await this.processProposals(unFinishedProposals)
+    await this.catchReceipt(pendingProposals)
+    await this.signProposals(unSignedProposals)
 
     this.locked = false
   }
 
-  protected abstract async processProposals (proposals: DatumWithTag[]): Promise<boolean>
+  protected async catchReceipt (proposals: DatumWithTag[]): Promise<boolean> {
+    await Promise.all(proposals.map(async p => {
+      const txHash = p.tag
+      const finished = await this.web3t.checkTransactionReceipt(txHash)
+      if (finished) {
+        await this.db.updateTag(this.prefix, UN_SIGNED_TAG, SIGNED_TAG, p.id)
+      }
+    }))
+    return true
+  }
+
+  protected async signProposals (proposals: DatumWithTag[]): Promise<boolean> {
+    for (const p of proposals) {
+      const calldata = p.value.calldata
+      const hash = p.value.hash
+      let data = ''
+      try {
+        data = this.web3t.abi.encodeFunctionCall(SUGGEST_ISSUE_FUNC_ABI, [
+          hash, calldata, false
+        ])
+      } catch (err) {
+        this.logger('Error [Signer signProposals] ' + err.message || err)
+      }
+      if (!data) {
+        continue
+      }
+      const txHash = await this.web3t.sendTransactionByAdmin({
+        to: this.multiSignAddr,
+        data,
+        gas: 1000000,
+        gasPrice: this.gasPrice
+      })
+      if (!txHash) {
+        continue
+      }
+      await this.db.set(this.prefix, [p.tagName, p.id].join(':'), txHash)
+    }
+    return true
+  }
 }

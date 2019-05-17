@@ -2,6 +2,7 @@ import { BaseApp, OptionParam } from '../BaseApp'
 import Database from '../leveldb'
 import sWeb3t from '../web3t'
 import HomeBridgeSubscription from '../schedule/HomeBridgeSubscription'
+import HomeSigner from '../schedule/HomeSigner'
 import ForeignBridgeSubscription from '../schedule/ForeignBridgeSubscription'
 import ForeignSigner from '../schedule/ForeignSigner'
 import Service from './service'
@@ -11,7 +12,8 @@ interface NetConfig {
   type: string
   tokenContract: string
   multiSignContract: string
-  fromHeight: number
+  fromHeight: number,
+  gasPrice: number | string
 }
 
 const opts: OptionParam[] = [
@@ -25,6 +27,7 @@ export default class SubscribeApp extends BaseApp {
 
   private service?: Service
   private homeSub: HomeBridgeSubscription
+  private homeSigner: HomeSigner
   private foreignSub: ForeignBridgeSubscription
   private foreignSigner: ForeignSigner
 
@@ -39,17 +42,27 @@ export default class SubscribeApp extends BaseApp {
       this.service = new Service(this.db, this.logger, this.config.service)
     }
 
+    const adminPrivKey = this.config.adminPrivKey as string
+
     const homeNetConfig = this.config.homeNetwork as NetConfig
     const homeWeb3t = new sWeb3t(this.logger, homeNetConfig.provider, homeNetConfig.type)
+    homeWeb3t.setAccount(adminPrivKey)
 
     const foreignNetConfig = this.config.foreignNetwork as NetConfig
     const foreignWeb3t = new sWeb3t(this.logger, foreignNetConfig.provider, foreignNetConfig.type)
+    foreignWeb3t.setAccount(adminPrivKey)
 
     this.homeSub = new HomeBridgeSubscription(this.db, this.logger, {
       web3t: homeWeb3t,
       storeContractAddr: homeNetConfig.multiSignContract,
       contractAddr: homeNetConfig.tokenContract,
       fromBlockHeight: homeNetConfig.fromHeight
+    })
+
+    this.homeSigner = new HomeSigner(this.db, this.logger, {
+      web3t: homeWeb3t,
+      multiSignAddr: homeNetConfig.multiSignContract,
+      gasPrice: homeNetConfig.gasPrice
     })
 
     this.foreignSub = new ForeignBridgeSubscription(this.db, this.logger, {
@@ -60,7 +73,8 @@ export default class SubscribeApp extends BaseApp {
 
     this.foreignSigner = new ForeignSigner(this.db, this.logger, {
       web3t: foreignWeb3t,
-      multiSignAddr: foreignNetConfig.multiSignContract
+      multiSignAddr: foreignNetConfig.multiSignContract,
+      gasPrice: foreignNetConfig.gasPrice
     })
 
     if (typeof this.config.interval === 'number') {
@@ -70,6 +84,10 @@ export default class SubscribeApp extends BaseApp {
 
   public start () {
     this.homeSub.start(this.interval)
+
+    setTimeout(() => {
+      this.homeSigner.start(this.interval)
+    }, this.interval * 0.25)
 
     setTimeout(() => {
       this.foreignSub.start(this.interval)
@@ -86,9 +104,9 @@ export default class SubscribeApp extends BaseApp {
 
   public stop () {
     this.homeSub.stop()
+    this.homeSigner.stop()
 
     this.foreignSub.stop()
-
     this.foreignSigner.stop()
 
     if (this.service) {
