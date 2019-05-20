@@ -59,7 +59,7 @@ export default class Service {
         return res.sendStatus(403)
       }
       const height = await this.db.get(prefix, FROM_BLOCK_KEY)
-      res.send(height)
+      res.json(height)
     })
 
     this.app.get('/proposals/unsigned/:type', async (req, res) => {
