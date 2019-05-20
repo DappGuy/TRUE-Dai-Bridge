@@ -42,3 +42,9 @@ $ node dist/index.js -h
     * Only whitelisted validators (a set of verified Ethereum/TrueChain addresses) is able to cast votes on the Multi-Sig functions. Preferably, more validators can be introduced by implementing functions that allow current validators to vote to include new whitelisted addresses.
 * Audited source code, and access for Maker.
   * Preferably open source and thus verifiable by community.
+
+### Dai from ETH to TRUE
+![ETH to TRUE](./docs/ETH2TRUE.jpg)
+
+### Dai from TRUE to ETH
+![TRUE to ETH](./docs/TRUE2ETH.jpg)
