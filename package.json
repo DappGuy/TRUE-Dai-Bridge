@@ -1,6 +1,6 @@
 {
-  "name": "true-dai-validator",
-  "version": "0.1.0",
+  "name": "true-dai-bridge",
+  "version": "1.0.0",
   "private": true,
   "description": "True-Dai token bridge service",
   "main": "./dist/index.js",
