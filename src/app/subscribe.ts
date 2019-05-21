@@ -7,7 +7,7 @@ import ForeignBridgeSubscription from '../schedule/ForeignBridgeSubscription'
 import ForeignSigner from '../schedule/ForeignSigner'
 import Service from './service'
 
-interface NetConfig {
+export interface NetConfig {
   provider: string
   type: string
   tokenContract: string
@@ -39,7 +39,7 @@ export default class SubscribeApp extends BaseApp {
     this.db = new Database(this.command.datadir)
 
     if (this.command.service) {
-      this.service = new Service(this.db, this.logger, this.config.service)
+      this.service = new Service(this.db, this.logger, this.config)
     }
 
     const adminPrivKey = this.config.adminPrivKey as string

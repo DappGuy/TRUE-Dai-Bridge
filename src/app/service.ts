@@ -3,9 +3,16 @@ import * as cors from 'cors'
 import * as express from 'express'
 
 import { MsgLogger } from '../BaseApp'
+import { NetConfig } from './subscribe'
 import Database from '../leveldb'
 
 import { PROPOSAL_INDEX, FROM_BLOCK_KEY, UN_SIGNED_TAG } from '../utils'
+
+interface Config {
+  service: ServiceConfig
+  homeNetwork: NetConfig
+  foreignNetwork: NetConfig
+}
 
 interface ServiceConfig {
   port: number
@@ -17,16 +24,21 @@ export default class Service {
   private db: Database
   private app: express.Express
 
+  private homeNetwork: NetConfig
+  private foreignNetwork: NetConfig
+
   private port = 3000
   private server?: Server
 
-  constructor (db: Database, logger: MsgLogger, config: ServiceConfig) {
+  constructor (db: Database, logger: MsgLogger, config: Config) {
 
     this.logger = logger
     this.db = db
     this.app = express()
 
-    this.port = config.port
+    this.port = config.service.port
+    this.homeNetwork = config.homeNetwork
+    this.foreignNetwork = config.foreignNetwork
 
     this.init()
   }
@@ -47,6 +59,23 @@ export default class Service {
       methods: ['GET'],
       origin: '*'
     }))
+
+    this.app.get('/network', async (_, res) => {
+      res.json({
+        home: {
+          provider: this.homeNetwork.provider,
+          type: this.homeNetwork.type,
+          token: this.homeNetwork.tokenContract,
+          multiSign: this.homeNetwork.multiSignContract
+        },
+        foreign: {
+          provider: this.foreignNetwork.provider,
+          type: this.foreignNetwork.type,
+          token: this.foreignNetwork.tokenContract,
+          multiSign: this.foreignNetwork.multiSignContract
+        }
+      })
+    })
 
     this.app.get('/height/:type', async (req, res) => {
       const type = req.params.type
