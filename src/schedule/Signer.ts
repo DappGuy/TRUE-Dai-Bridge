@@ -3,6 +3,7 @@ import { SignerOptions } from './type'
 import Database, { DatumWithTag } from 'src/leveldb'
 import { PROPOSAL_INDEX, UN_SIGNED_TAG, SIGNED_TAG, SUGGEST_ISSUE_FUNC_ABI } from '../utils'
 
+import { CronJob, CronTime } from 'cron'
 import sWeb3t from '../web3t'
 
 export default abstract class Signer {
@@ -16,7 +17,7 @@ export default abstract class Signer {
 
   protected locked = false
 
-  private subTimer?: NodeJS.Timeout
+  private job: CronJob
 
   constructor (db: Database, logger: MsgLogger, options: SignerOptions) {
 
@@ -34,26 +35,30 @@ export default abstract class Signer {
 
     this.multiSignAddr = options.multiSignAddr
     this.gasPrice = options.gasPrice
+
+    this.job = new CronJob('*/4 * * * * *', () => {
+      this.catchProposals()
+    }, () => {
+      this.logger(`[${this.name}] complete`)
+    })
   }
 
   abstract get name (): string
   abstract get prefix (): string
 
-  public start (interval: number): boolean {
-    if (this.subTimer) {
-      return false
+  public start (offset: number, interval: number): boolean {
+    const second = []
+    for (let i = offset; i < 60; i += interval) {
+      second.push(i)
     }
-    this.subTimer = setInterval(() => {
-      this.catchProposals()
-    }, interval)
+    const cornTime = second.join(',') + ' * * * * *'
+    this.job.setTime(new CronTime(cornTime))
+    this.job.start()
     return true
   }
 
   public stop (): boolean {
-    if (!this.subTimer) {
-      return false
-    }
-    clearTimeout(this.subTimer)
+    this.job.stop()
     return true
   }
 

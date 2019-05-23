@@ -83,19 +83,11 @@ export default class SubscribeApp extends BaseApp {
   }
 
   public start () {
-    this.homeSub.start(this.interval)
+    this.homeSub.start(0, 4)
+    this.homeSigner.start(3, 4)
 
-    setTimeout(() => {
-      this.homeSigner.start(this.interval)
-    }, this.interval * 0.25)
-
-    setTimeout(() => {
-      this.foreignSub.start(this.interval)
-    }, this.interval * 0.5)
-
-    setTimeout(() => {
-      this.foreignSigner.start(this.interval)
-    }, this.interval * 0.75)
+    this.foreignSub.start(2, 4)
+    this.foreignSigner.start(1, 4)
 
     if (this.service) {
       this.service.start()

@@ -2,6 +2,7 @@ import { Log } from 'web3true/types'
 import { MsgLogger } from 'src/BaseApp'
 import { SubOptions } from './type'
 
+import { CronJob, CronTime } from 'cron'
 import sWeb3t from '../web3t'
 
 export default abstract class Subscription {
@@ -17,7 +18,7 @@ export default abstract class Subscription {
 
   protected locked = false
 
-  private subTimer?: NodeJS.Timeout
+  private job: CronJob
 
   constructor (logger: MsgLogger, options: SubOptions) {
     if (options.web3t) {
@@ -43,6 +44,12 @@ export default abstract class Subscription {
     if (options.maxBlockPerStep) {
       this.maxBlockPerStep = options.maxBlockPerStep
     }
+
+    this.job = new CronJob('*/4 * * * * *', () => {
+      this.catchLogs()
+    }, () => {
+      this.logger(`[${this.name}] complete`)
+    })
   }
 
   abstract get name (): string
@@ -52,21 +59,19 @@ export default abstract class Subscription {
     this.topics = topics
   }
 
-  public start (interval: number): boolean {
-    if (this.subTimer) {
-      return false
+  public start (offset: number, interval: number): boolean {
+    const second = []
+    for (let i = offset; i < 60; i += interval) {
+      second.push(i)
     }
-    this.subTimer = setInterval(() => {
-      this.catchLogs()
-    }, interval)
+    const cornTime = second.join(',') + ' * * * * *'
+    this.job.setTime(new CronTime(cornTime))
+    this.job.start()
     return true
   }
 
   public stop (): boolean {
-    if (!this.subTimer) {
-      return false
-    }
-    clearTimeout(this.subTimer)
+    this.job.stop()
     return true
   }
 
