@@ -17,6 +17,7 @@ export default abstract class Subscription {
   protected confirmedInterval: number = 0
 
   protected locked = false
+  private lockState = 0
 
   private job: CronJob
 
@@ -77,20 +78,23 @@ export default abstract class Subscription {
 
   protected async catchLogs () {
     if (this.locked) {
-      this.logger(`[${this.name}] ${Date.now()} locked`)
+      this.logger(`[${this.name}] ${Date.now()} locked`, 'lockState:', this.lockState)
       return
     }
     this.locked = true
+    this.lockState = 1
 
     const topHeight = await this.web3t.getBlockNumber()
+    this.lockState = 2
     const confirmedHeight = topHeight - this.confirmedInterval
     const toHeight = Math.min(this.fromHeight + this.maxBlockPerStep - 1, confirmedHeight)
 
+    this.lockState = 3
     if (toHeight < this.fromHeight) {
       this.locked = false
       return
     }
-
+    this.lockState = 4
     this.logger(`[${this.name}] ${Date.now()} catchLogs: ${this.fromHeight} - ${toHeight}`)
 
     const logs = await this.web3t.getPastLogs(
@@ -99,15 +103,16 @@ export default abstract class Subscription {
       this.contractAddr,
       this.topics
     )
+    this.lockState = 5
     if (!logs || typeof logs === 'boolean') {
       this.locked = false
       return
     }
-
+    this.lockState = 6
     this.fromHeight = toHeight + 1
 
     await this.processLogs(logs)
-
+    this.lockState = 0
     this.locked = false
   }
 
