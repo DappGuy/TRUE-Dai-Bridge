@@ -18,7 +18,9 @@ export interface NetConfig {
 
 const opts: OptionParam[] = [
   ['-d, --datadir [datadir]', 'Specify a file as levelDB store', '.leveldata'],
-  ['-s, --service', 'Provide query services']
+  ['-s, --service', 'Provide query services'],
+  ['--ignorehomechain', 'Do not participate in home to foreign network voting'],
+  ['--ignoreforeignchain', 'Do not participate in foreign to home network voting']
 ]
 
 export default class SubscribeApp extends BaseApp {
@@ -50,6 +52,7 @@ export default class SubscribeApp extends BaseApp {
     const foreignWeb3t = new sWeb3t(this.logger, foreignNetConfig.provider, foreignNetConfig.type)
     foreignWeb3t.setAccount(adminPrivKey)
 
+    // home 2 foreign -----------------------------------------------
     this.homeSub = new HomeBridgeSubscription(this.db, this.logger, {
       web3t: homeWeb3t,
       storeContractAddr: homeNetConfig.multiSignContract,
@@ -57,31 +60,38 @@ export default class SubscribeApp extends BaseApp {
       fromBlockHeight: homeNetConfig.fromHeight
     })
 
-    this.homeSigner = new HomeSigner(this.db, this.logger, {
-      web3t: homeWeb3t,
-      multiSignAddr: homeNetConfig.multiSignContract,
-      gasPrice: homeNetConfig.gasPrice
+    this.foreignSigner = new ForeignSigner(this.db, this.logger, {
+      web3t: foreignWeb3t,
+      multiSignAddr: foreignNetConfig.multiSignContract,
+      gasPrice: foreignNetConfig.gasPrice
     })
+    // --------------------------------------------------------------
 
+    // foreign 2 home -----------------------------------------------------
     this.foreignSub = new ForeignBridgeSubscription(this.db, this.logger, {
       web3t: foreignWeb3t,
       contractAddr: foreignNetConfig.tokenContract,
       fromBlockHeight: foreignNetConfig.fromHeight
     })
 
-    this.foreignSigner = new ForeignSigner(this.db, this.logger, {
-      web3t: foreignWeb3t,
-      multiSignAddr: foreignNetConfig.multiSignContract,
-      gasPrice: foreignNetConfig.gasPrice
+    this.homeSigner = new HomeSigner(this.db, this.logger, {
+      web3t: homeWeb3t,
+      multiSignAddr: homeNetConfig.multiSignContract,
+      gasPrice: homeNetConfig.gasPrice
     })
+    // --------------------------------------------------------------------
   }
 
   public start () {
-    this.homeSub.start(0, 4)
-    this.homeSigner.start(3, 4)
+    if (!this.command.ignorehomechain) {
+      this.homeSub.start(0, 4)
+      this.foreignSigner.start(3, 4)
+    }
 
-    this.foreignSub.start(2, 4)
-    this.foreignSigner.start(1, 4)
+    if (!this.command.ignoreforeignchain) {
+      this.foreignSub.start(2, 4)
+      this.homeSigner.start(1, 4)
+    }
 
     if (this.service) {
       this.service.start()
@@ -89,11 +99,15 @@ export default class SubscribeApp extends BaseApp {
   }
 
   public stop () {
-    this.homeSub.stop()
-    this.homeSigner.stop()
+    if (!this.command.ignorehomechain) {
+      this.homeSub.stop()
+      this.foreignSigner.stop()
+    }
 
-    this.foreignSub.stop()
-    this.foreignSigner.stop()
+    if (!this.command.ignoreforeignchain) {
+      this.foreignSub.stop()
+      this.homeSigner.stop()
+    }
 
     if (this.service) {
       this.service.stop()
