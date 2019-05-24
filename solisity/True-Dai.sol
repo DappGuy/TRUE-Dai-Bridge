@@ -76,7 +76,7 @@ contract TrueDai {
   }
 
   function burn (uint256 _amount) public {
-    require(balances[msg.sender] > _amount, "");
+    require(balances[msg.sender] >= _amount, "");
 
     totalSupply = totalSupply.sub(_amount);
     balances[msg.sender] = balances[msg.sender].sub(_amount);
