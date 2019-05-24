@@ -31,8 +31,6 @@ export default class SubscribeApp extends BaseApp {
   private foreignSub: ForeignBridgeSubscription
   private foreignSigner: ForeignSigner
 
-  private interval: number = 100000
-
   constructor () {
     super(...opts)
 
@@ -76,10 +74,6 @@ export default class SubscribeApp extends BaseApp {
       multiSignAddr: foreignNetConfig.multiSignContract,
       gasPrice: foreignNetConfig.gasPrice
     })
-
-    if (typeof this.config.interval === 'number') {
-      this.interval = this.config.interval
-    }
   }
 
   public start () {
