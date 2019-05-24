@@ -77,6 +77,7 @@ export default abstract class Subscription {
 
   protected async catchLogs () {
     if (this.locked) {
+      this.logger(`[${this.name}] ${Date.now()} locked`)
       return
     }
     this.locked = true
@@ -98,6 +99,11 @@ export default abstract class Subscription {
       this.contractAddr,
       this.topics
     )
+    if (!logs || typeof logs === 'boolean') {
+      this.locked = false
+      return
+    }
+
     this.fromHeight = toHeight + 1
 
     await this.processLogs(logs)

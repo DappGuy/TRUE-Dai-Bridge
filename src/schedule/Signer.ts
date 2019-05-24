@@ -64,6 +64,7 @@ export default abstract class Signer {
 
   protected async catchProposals () {
     if (this.locked) {
+      this.logger(`[${this.name}] ${Date.now()} locked`)
       return
     }
     this.locked = true

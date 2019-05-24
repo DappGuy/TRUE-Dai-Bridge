@@ -57,7 +57,7 @@ export default class SimpleWeb3t {
     toBlock: number,
     address: string,
     topics: Array<string | null>,
-  ): Promise<Log[]> {
+  ): Promise<Log[] | boolean> {
     return this.web3t.eth.getPastLogs({
       fromBlock,
       toBlock,
@@ -65,7 +65,7 @@ export default class SimpleWeb3t {
       topics
     }).catch(err => {
       this.logger('Error [Web3t getPastLogs] ' + err.message || err)
-      return [] as Log[]
+      return false
     })
   }
 
