@@ -49,6 +49,7 @@ contract MultiSignStore is MultiSign {
 
   function withdraw () external {
     uint256 value = balance[msg.sender];
+    require(value > 0, "no balance");
     balance[msg.sender] = 0;
     token.transfer(msg.sender, value);
   }
