@@ -17,9 +17,9 @@ export default abstract class Subscription {
   protected confirmedInterval: number = 0
 
   protected locked = false
-  private lockState = 0
 
   private job: CronJob
+  private logTimer: number
 
   constructor (logger: MsgLogger, options: SubOptions) {
     if (options.web3t) {
@@ -37,6 +37,7 @@ export default abstract class Subscription {
     }
 
     this.logger = logger
+    this.logTimer = Date.now()
 
     this.contractAddr = options.contractAddr
 
@@ -78,24 +79,38 @@ export default abstract class Subscription {
 
   protected async catchLogs () {
     if (this.locked) {
-      this.logger(`[${this.name}] ${Date.now()} locked`, 'lockState:', this.lockState)
+      this.logger(`[${this.name}] ${Date.now()} locked`)
       return
     }
     this.locked = true
-    this.lockState = 1
+
+    // because of the indeterminate BUG of the node response
+    // it needs to be unlocked after a certain time
+    let finished = false
+    const end = () => {
+      if (!finished) {
+        finished = true
+        this.locked = false
+      }
+    }
+    setTimeout(() => {
+      end()
+    }, 20000)
 
     const topHeight = await this.web3t.getBlockNumber()
-    this.lockState = 2
     const confirmedHeight = topHeight - this.confirmedInterval
     const toHeight = Math.min(this.fromHeight + this.maxBlockPerStep - 1, confirmedHeight)
 
-    this.lockState = 3
     if (toHeight < this.fromHeight) {
-      this.locked = false
-      return
+      return end()
     }
-    this.lockState = 4
-    this.logger(`[${this.name}] ${Date.now()} catchLogs: ${this.fromHeight} - ${toHeight}`)
+
+    // reduce the log frequency to 5 minutes
+    const now = Date.now()
+    if (now - this.logTimer > 300000) {
+      this.logTimer = now
+      this.logger(`[${this.name}] ${Date.now()} catchLogs to: ${toHeight}`)
+    }
 
     const logs = await this.web3t.getPastLogs(
       this.fromHeight,
@@ -103,17 +118,16 @@ export default abstract class Subscription {
       this.contractAddr,
       this.topics
     )
-    this.lockState = 5
-    if (!logs || typeof logs === 'boolean') {
-      this.locked = false
-      return
+
+    if (!logs || typeof logs === 'boolean' || finished) {
+      return end()
     }
-    this.lockState = 6
+
     this.fromHeight = toHeight + 1
 
     await this.processLogs(logs)
-    this.lockState = 0
-    this.locked = false
+
+    end()
   }
 
   protected abstract async processLogs (logs: Log[]): Promise<boolean>
