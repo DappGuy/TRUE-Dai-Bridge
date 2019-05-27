@@ -129,6 +129,7 @@ contract MultiSign {
       whiteList[whiteListIndex[_member]] = whiteList[whiteListSize];
     }
     whiteListSize--;
+    require(threshold <= whiteListSize, "too high threshold");
     whiteListIndex[_member] = 0;
     emit RemoveWhiteList(_member);
   }
