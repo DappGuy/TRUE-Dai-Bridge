@@ -7,10 +7,36 @@ $ npm install
 $ npm run build
 ```
 
-## start (not completed)
+## start
 
 ```shell
-$ node dist/index.js -s
+$ node dist/index.js -s -c <your config file path> -k <your keystore file path>
+# then you need to enter the password of your keystore
+```
+
+config.json looks like:
+```json
+{
+  "service": {
+    "port": "<service listening port>"
+  },
+  "homeNetwork": {
+    "provider": "<ethereum http(s) provider>",
+    "type": "eth",
+    "tokenContract": "<Dai contract address>",
+    "multiSignContract": "<ethereum multi-sign contract address>",
+    "fromHeight": "<the starting block height of the subscription log: number>",
+    "gasPrice": "<gasPrice: number>"
+  },
+  "foreignNetwork": {
+    "provider": "<truechain http(s) provider>",
+    "type": "true",
+    "tokenContract": "<T-Dai contract address>",
+    "multiSignContract": "<truechain multi-sign contract address>",
+    "fromHeight": "<the starting block height of the subscription log: number>",
+    "gasPrice": "<gasPrice: number>"
+  }
+}
 ```
 
 and to view startup help
