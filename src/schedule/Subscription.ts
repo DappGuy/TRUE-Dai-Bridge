@@ -94,6 +94,7 @@ export default abstract class Subscription {
       }
     }
     setTimeout(() => {
+      this.logger(`[${this.name}] ${Date.now()} timeout`)
       end()
     }, 20000)
 
@@ -105,9 +106,9 @@ export default abstract class Subscription {
       return end()
     }
 
-    // reduce the log frequency to 5 minutes
+    // reduce the log frequency to 10 minutes
     const now = Date.now()
-    if (now - this.logTimer > 300000) {
+    if (now - this.logTimer > 600000) {
       this.logTimer = now
       this.logger(`[${this.name}] ${Date.now()} catchLogs to: ${toHeight}`)
     }
