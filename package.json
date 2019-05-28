@@ -16,11 +16,13 @@
     "@types/cors": "^2.8.5",
     "@types/cron": "^1.7.1",
     "@types/express": "^4.16.1",
+    "@types/prompts": "^2.0.0",
     "commander": "^2.20.0",
     "cors": "^2.8.5",
     "cron": "^1.7.1",
     "express": "^4.16.4",
     "level": "^5.0.1",
+    "prompts": "^2.1.0",
     "web3true": "^1.1.6"
   },
   "devDependencies": {

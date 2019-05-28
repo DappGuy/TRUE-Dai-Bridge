@@ -61,7 +61,9 @@ export default class Service {
     }))
 
     this.app.get('/network', async (_, res) => {
+      const admin = await this.db.get('app', 'admin')
       res.json({
+        admin,
         home: {
           provider: this.homeNetwork.provider,
           type: this.homeNetwork.type,

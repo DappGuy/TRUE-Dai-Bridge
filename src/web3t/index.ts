@@ -3,6 +3,7 @@ import { Log } from 'web3true/types'
 import { Tx } from 'web3true/eth/types'
 
 import Web3t = require('web3true')
+import { Account, PrivateKey } from 'web3true/eth/accounts'
 
 export default class SimpleWeb3t {
 
@@ -17,8 +18,7 @@ export default class SimpleWeb3t {
     this.web3t.eth.defaultBlock = 'pending'
   }
 
-  public setAccount (privateKey: string) {
-    const account = this.web3t.eth.accounts.privateKeyToAccount(privateKey)
+  public setAccount (account: Account) {
     this.address = account.address
     this.web3t.eth.accounts.wallet.add(account)
   }
@@ -33,6 +33,24 @@ export default class SimpleWeb3t {
 
   get type () {
     return this.web3t.currentProvider.type
+  }
+
+  public unlockAccount (keystore: PrivateKey, pwd: string): Account | false {
+    try {
+      const account = this.web3t.eth.accounts.decrypt(keystore, pwd)
+      return account
+    } catch (_) {
+      return false
+    }
+  }
+
+  public privateKeyToAccount (privKey: string): Account | false {
+    try {
+      const account = this.web3t.eth.accounts.privateKeyToAccount(privKey)
+      return account
+    } catch (_) {
+      return false
+    }
   }
 
   public async getBlockNumber (): Promise<number> {

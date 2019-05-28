@@ -6,5 +6,7 @@ node_modules
 
 .DS_Store
 
+# private config
 config.json
 config.*.json
+key.json
