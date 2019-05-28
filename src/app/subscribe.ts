@@ -84,6 +84,8 @@ export default class SubscribeApp extends BaseApp {
       })
       if (!response.pwd || !this.account) {
         return process.exit(1)
+      } else {
+        console.log('[App] correct password, service startup')
       }
     } else {
       const adminPrivKey = this.config.adminPrivKey as string
