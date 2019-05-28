@@ -94,7 +94,9 @@ export default abstract class Subscription {
       }
     }
     setTimeout(() => {
-      this.logger(`[${this.name}] ${Date.now()} timeout`)
+      if (!finished) {
+        this.logger(`[${this.name}] ${Date.now()} timeout`)
+      }
       end()
     }, 20000)
 
