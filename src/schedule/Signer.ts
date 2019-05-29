@@ -101,6 +101,11 @@ export default abstract class Signer {
       if (finished) {
         this.logger(`[${this.name}] signed: hash`, p.key)
         await this.db.updateTag(this.prefix, UN_SIGNED_TAG, SIGNED_TAG, p.id)
+      } else {
+        const exist = await this.web3t.checkTransaction(txHash)
+        if (!exist) {
+          this.db.set(this.prefix, [UN_SIGNED_TAG, p.id].join(':'), true)
+        }
       }
     }))
     return true

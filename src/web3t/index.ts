@@ -11,6 +11,7 @@ export default class SimpleWeb3t {
   private web3t: Web3t
 
   private address?: string
+  private nonce?: number
 
   constructor (logger: MsgLogger, httpProvider: string, netType?: string) {
     this.logger = logger
@@ -21,6 +22,10 @@ export default class SimpleWeb3t {
   public setAccount (account: Account) {
     this.address = account.address
     this.web3t.eth.accounts.wallet.add(account)
+    this.web3t.eth.getTransactionCount(account.address)
+      .then(nonce => {
+        this.nonce = nonce
+      })
   }
 
   get abi () {
@@ -61,6 +66,15 @@ export default class SimpleWeb3t {
       })
   }
 
+  public async checkTransaction (txHash: string): Promise<boolean> {
+    return this.web3t.eth.getTransaction(txHash)
+      .then(tx => !!tx)
+      .catch(err => {
+        this.logger('Error [Web3t getTransaction] ' + err.message || err)
+        return false
+      })
+  }
+
   public async checkTransactionReceipt (txHash: string): Promise<boolean> {
     return this.web3t.eth.getTransactionReceipt(txHash)
       .then(receipt => !!receipt)
@@ -91,17 +105,25 @@ export default class SimpleWeb3t {
     if (!this.address) {
       return ''
     }
+    const nonce = await this.updateNonce()
     return new Promise((resolve: (hash: string) => void) => {
       this.web3t.eth.sendTransaction(Object.assign({
-        from: this.address
+        from: this.address,
+        nonce
       }, tx), (err, txHash) => {
         if (err) {
           this.logger('Error [Web3t sendTransaction] ' + err.message || err)
           resolve('')
         } else {
+          this.nonce = nonce
           resolve(txHash)
         }
       })
     })
+  }
+
+  private async updateNonce (): Promise<number> {
+    const nonce = await this.web3t.eth.getTransactionCount(this.address!)
+    return Math.max(this.nonce || -1 + 1, nonce)
   }
 }
